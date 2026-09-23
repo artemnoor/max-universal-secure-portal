@@ -13,7 +13,8 @@ import { Store } from '../../store.js';
 import type { PortalUserStore } from '../../portal/ports/user-store.js';
 
 export type PortalRuntime = Readonly<{ store: PortalUserStore; storage?: StoragePort; ephemeral: EphemeralStore; updateInbox: Pick<StoragePort, 'updateInbox'>; readiness: () => Promise<void>; close(): Promise<void> }>;
-export const createPortalRuntime = (config: AppConfig): PortalRuntime => {
+export type PortalRuntimeOptions = Readonly<{ moduleMigrations?: readonly Readonly<{ ownerId: string; version: string; sql: string }>[] }>;
+export const createPortalRuntime = (config: AppConfig, options: PortalRuntimeOptions = {}): PortalRuntime => {
   if (config.nodeEnv === 'development' || config.nodeEnv === 'test') {
     if (config.databaseUrl || config.redisUrl) throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Локальное хранилище требует пустые DATABASE_URL и REDIS_URL.', { details: { storage: 'file', environment: config.nodeEnv } });
     const store = new Store(config.dataDir, { allowFileStore: true });
@@ -25,5 +26,5 @@ export const createPortalRuntime = (config: AppConfig): PortalRuntime => {
   try { redis = createRedisCommands(config); ephemeral = new RedisEphemeralStore(redis, 'portal', config.piiEncryptionKey); }
   catch (error) { void postgres.close(); throw error; }
   const store = new PostgresPortalStore({ storage, adminUserIds: config.adminUserIds, stats: async () => { const result = await postgres.query<{ count: string | number }>('SELECT COUNT(*)::int AS count FROM portal_users'); return { users: Number(result.rows[0]?.count ?? 0) }; } });
-  return { store, storage, ephemeral, updateInbox: storage, readiness: async () => { await postgres.query('SELECT 1'); await verifyMigrations(postgres); if (redis.ping) await redis.ping(); }, async close() { await ephemeral.close(); await store.close(); } };
+  return { store, storage, ephemeral, updateInbox: storage, readiness: async () => { await postgres.query('SELECT 1'); await verifyMigrations(postgres, undefined, options.moduleMigrations); if (redis.ping) await redis.ping(); }, async close() { await ephemeral.close(); await store.close(); } };
 };
