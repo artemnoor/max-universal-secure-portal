@@ -1,0 +1,14 @@
+node_modules/
+dist/
+data/
+output/
+.playwright-cli/
+certs/
+.env
+npm-debug.log*
+.nyc_output/
+coverage/
+*.tsbuildinfo
+.npm-seed/
+.agents/
+graphify-out/

@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm run check:compose
+      - name: Validate bundled staging Compose
+        shell: bash
+        env:
+          POSTGRES_PASSWORD: ci-compose-password
+          REDIS_PASSWORD: ci-compose-password
+        run: |
+          trap 'rm -f .env' EXIT
+          cp .env.example .env
+          docker compose config --quiet
+      - name: Build production image
+        run: docker build --tag max-portal:ci .
+      - run: npm run coverage:check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Run PostgreSQL/Redis integration profile
+        env:
+          RUN_POSTGRES_INTEGRATION: 'true'
+        run: npm run test:integration
+      - run: npm run verify:config
+      - run: npm run docs:check
+      - run: npm audit --audit-level=high
+      - name: Reject committed local secrets and runtime data
+        shell: bash
+        run: |
+          ! git ls-files | grep -E '(^|/)(\.env|data/|.*\.pem$|.*\.key$)' || {
+            echo 'Tracked secret/runtime artifact detected'; exit 1;
+          }
+          ! git grep -nE 'BOT_TOKEN[=][^$<>{}[:space:]]+|AI_API_KEY[=][^$<>{}[:space:]]+' -- ':!*.lock' ':!.env.example' || {
+            echo 'Credential-shaped value detected in tracked files'; exit 1;
+          }
+          ! git grep -nE 'postgres(ql)?://[^$<>{}[:space:]]+:[^$<>{}[:space:]]+@' -- ':!*.lock' || {
+            echo 'Credential-shaped database URL detected in tracked files'; exit 1;
+          }

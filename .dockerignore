@@ -1,0 +1,13 @@
+node_modules
+dist
+data
+.env
+.git
+.github
+graphify-out
+.agents
+.ai-factory
+coverage
+*.log
+certs
+tests

@@ -1,0 +1,40 @@
+{
+  "name": "max-universal-secure-portal",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "lint": "node scripts/lint.mjs",
+    "test": "tsx --test tests/**/*.test.ts",
+    "test:coverage": "tsx --test --experimental-test-coverage tests/**/*.test.ts",
+    "test:browser": "node scripts/miniapp-check.mjs && node scripts/browser-check.mjs",
+    "test:integration": "node scripts/integration-check.mjs",
+    "check:compose": "node scripts/compose-contract-check.mjs",
+    "coverage:check": "node scripts/coverage-check.mjs",
+    "audit": "npm audit --audit-level=high",
+    "docs:check": "node scripts/docs-check.mjs",
+    "verify:config": "tsx scripts/verify-config.ts",
+    "smoke:max": "tsx scripts/smoke-max.ts",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "dev": "tsx src/bot.ts",
+    "app": "tsx src/app-server.ts",
+    "all": "tsx src/dev-all.ts",
+    "start": "node dist/bot.js",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run check:compose && npm run docs:check && npm run test:browser"
+  },
+  "dependencies": {
+    "@maxhub/max-bot-api": "^0.3.1",
+    "dotenv": "^16.4.7",
+    "ioredis": "5.6.1",
+    "pg": "8.20.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "playwright": "1.63.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
