@@ -10,6 +10,7 @@ export const createWebHost = (composition: PortalComposition): WebHost => {
   const app = buildHttpApp({
     config: composition.config,
     content: composition.httpContent,
+    portalInfo: composition.portalInfo,
     store: composition.runtime.store,
     logger,
     readiness: composition.runtime.readiness,

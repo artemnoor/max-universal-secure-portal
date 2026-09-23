@@ -11,18 +11,31 @@
 - PostgreSQL repositories, Redis locks/rate limits и dev-only FileStore;
 - encrypted PII fields, audit log, idempotent update inbox и bounded conversation state;
 - hardened HTTP headers, CORS allowlist, body/response limits и safe static serving;
-- health/readiness endpoints, Docker Compose, migrations, smoke/browser/security checks.
+- generic Mini App dashboard, public module catalog endpoint, health/readiness endpoints, Docker Compose, migrations, smoke/browser/security checks.
 
 ## Быстрый старт
 
 ```powershell
 npm ci
 Copy-Item .env.example .env
-npm run check
-npm run app
+npm run maxapp -- doctor
+npm run maxapp -- dev
 ```
 
-Для локальной разработки без PostgreSQL и Redis оставьте `DATABASE_URL` и `REDIS_URL` пустыми. FileStore разрешён только в `development`/`test`.
+macOS/Linux:
+
+```sh
+npm ci
+cp .env.example .env
+npm run maxapp -- doctor
+npm run maxapp -- dev
+```
+
+Для локальной разработки без PostgreSQL и Redis оставьте `DATABASE_URL` и `REDIS_URL` пустыми. FileStore разрешён только в `development`/`test`. `npm run check` — быстрый gate; `npm run check:full` — полный release gate с browser smoke, security coverage и audit.
+
+`maxapp` доступен без глобальной установки: используйте `npm run maxapp -- <команда>`, `./maxapp` в macOS/Linux или `.\maxapp.ps1`/`.\maxapp.cmd` в PowerShell/CMD. В staging/production `PORTAL_SECURITY_V2` и `PORTAL_STORAGE_V2` включены по умолчанию и отключать их нельзя; `PORTAL_AI_ENABLED` остаётся opt-in и требует отдельного ключа/политики данных.
+
+Для локального pre-commit gate один раз выполните `npm run hooks:install`; hook запускает быстрый `npm run check`, а CI запускает полный gate.
 
 ## Подключение своего модуля
 
@@ -39,7 +52,7 @@ npm run app
 ```powershell
 npm run verify:config -- --mode production
 npm run db:migrate
-npm run check
+npm run check:full
 ```
 
 `bot` не удаляет чужую MAX Webhook-подписку и не снимает свою автоматически при graceful shutdown. Оператор управляет подписками отдельно по [официальной документации MAX](https://dev.max.ru/docs-api/methods/POST/subscriptions).
@@ -49,12 +62,17 @@ npm run check
 - `src/entrypoints/bot.ts` — composition root для MAX.
 - `src/entrypoints/composition.ts` — единая сборка runtime, kernel и module catalog.
 - `src/hosts/` — отдельные lifecycle hosts для bot, web и migration.
+- `src/entrypoints/runtime.ts` — единый dispatcher ролей `app`, `bot`, `migrate` для Docker/orchestrator.
 - `src/app-server.ts` — HTTP lifecycle.
 - `src/portal/contracts.ts` — transport-neutral contracts.
 - `src/portal/application.ts` — module kernel и state boundary.
 - `src/http/app.ts` — security boundary для API и static files.
+- `src/portal/portal-info.ts` — безопасная public metadata projection для Mini App.
+- `contracts/` — JSON Schema/OpenAPI contracts между runtime boundaries.
 - `src/infrastructure/postgres/repositories.ts` — durable storage adapters.
 - `docs/architecture.md` — зависимости и границы.
 - `docs/architecture/modules.md` — контракты и правила расширения.
 - `docs/security/threat-model.md` — угрозы и остаточные риски.
 - `docs/operations/runbook.md` — эксплуатационные проверки.
+- `docs/operations/observability.md` — structured logs, Prometheus metrics и alert response.
+- `docs/operations/backup-restore.md` — безопасные backup/restore PostgreSQL.

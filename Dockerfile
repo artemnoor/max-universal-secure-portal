@@ -20,4 +20,5 @@ COPY --from=build /app/db ./db
 RUN mkdir -p /app/data && chown -R node:node /app
 USER node
 EXPOSE 8787
-CMD ["node", "dist/app-server.js"]
+ENTRYPOINT ["node", "dist/entrypoints/runtime.js"]
+CMD ["app"]

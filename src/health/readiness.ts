@@ -20,5 +20,6 @@ export const checkReadiness = async (
       logger?.warn({ dependency: name, error: errorToLogFields(error) }, 'readiness dependency failed');
     }
   }));
+  if (failed.length > 0) metrics?.increment('readiness_failures_total');
   return { ok: failed.length === 0, checks: failed };
 };

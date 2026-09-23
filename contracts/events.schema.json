@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/max-portal/contracts/events.schema.json",
+  "title": "MAX Portal event envelope",
+  "description": "Transport-neutral event contract shared by bot, HTTP and application boundaries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "kind", "principal", "payload", "receivedAt"],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "kind": { "enum": ["message", "callback", "bot_started", "web_app", "lifecycle"] },
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["userId", "role"],
+      "properties": {
+        "userId": { "type": "integer", "minimum": 1 },
+        "role": { "enum": ["user", "admin"] },
+        "chatId": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "chatId": { "type": "integer", "minimum": 1 },
+    "payload": {},
+    "receivedAt": { "type": "string", "format": "date-time" }
+  }
+}

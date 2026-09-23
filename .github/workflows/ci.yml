@@ -10,6 +10,7 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +22,8 @@ jobs:
       - run: npm run lint
       - run: npm run check:module-boundaries
       - run: npm run check:architecture
+      - run: npm run check:contracts
+      - run: npm run check:env
       - run: npm test
       - run: npm run build
       - run: npm run check:compose

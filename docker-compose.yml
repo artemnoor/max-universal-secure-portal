@@ -38,7 +38,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["node", "dist/entrypoints/db-migrate.js"]
+    command: ["migrate"]
 
   app:
     build: .
@@ -65,6 +65,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
 
   bot:
     build: .
@@ -86,12 +91,17 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-    command: ["node", "dist/bot.js"]
+    command: ["bot"]
     healthcheck:
       test: ["CMD", "node", "-e", "require('node:net').connect(3000, '127.0.0.1', () => process.exit(0)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 12
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
 
 volumes:
   portal-postgres:

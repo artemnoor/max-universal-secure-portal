@@ -26,7 +26,7 @@ const messages = {
 };
 
 export function getMaxBridge() {
-  return window.WebApp || null;
+  return window.WebApp || window.MaxBridge || null;
 }
 
 export async function api(path, options = {}) {

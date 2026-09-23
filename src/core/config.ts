@@ -31,6 +31,7 @@ export type AppConfig = Readonly<{
   aiApiUrl: string;
   aiApiKey: string;
   aiModel: string;
+  metricsToken: string;
   portalSecurityV2: boolean;
   portalStorageV2: boolean;
   portalAiEnabled: boolean;
@@ -89,8 +90,9 @@ const rawEnvironmentSchema = z.object({
   AI_API_URL: z.string().trim().url().default('https://api.openai.com/v1'),
   AI_API_KEY: z.string().trim().default(''),
   AI_MODEL: z.string().trim().min(1).default('gpt-4o-mini'),
-  PORTAL_SECURITY_V2: z.preprocess(parseBoolean, z.boolean()),
-  PORTAL_STORAGE_V2: z.preprocess(parseBoolean, z.boolean()),
+  METRICS_TOKEN: z.string().trim().default(''),
+  PORTAL_SECURITY_V2: z.preprocess((value) => value === undefined || value === '' ? true : parseBoolean(value), z.boolean()),
+  PORTAL_STORAGE_V2: z.preprocess((value) => value === undefined || value === '' ? true : parseBoolean(value), z.boolean()),
   PORTAL_AI_ENABLED: z.preprocess(parseBoolean, z.boolean()),
   LOG_LEVEL: z.preprocess((value) => typeof value === 'string' ? value.trim().toLowerCase() : value, z.enum(LOG_LEVEL_VALUES).default('info')),
 });
@@ -147,6 +149,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
     const aiUrl = new URL(raw.AI_API_URL);
     if (aiUrl.protocol !== 'https:' || aiUrl.username || aiUrl.password || aiUrl.search || aiUrl.hash) invariant('AI_API_URL', environment, 'must use HTTPS without credentials, query or fragment');
   }
+  if (raw.METRICS_TOKEN && !/^[A-Za-z0-9._-]{16,256}$/u.test(raw.METRICS_TOKEN)) invariant('METRICS_TOKEN', environment, 'must contain 16-256 URL-safe characters');
   const maxUrl = new URL(raw.MAX_API_BASE_URL);
   if (runtime && (maxUrl.protocol !== 'https:' || maxUrl.username || maxUrl.password || maxUrl.search || maxUrl.hash || !isSafeHostname(maxUrl.hostname))) invariant('MAX_API_BASE_URL', environment, 'must use HTTPS without credentials, query or fragment');
   if (raw.PUBLIC_APP_ORIGINS.some((origin) => !isHttpOrigin(origin))) invariant('PUBLIC_APP_ORIGINS', environment, 'must contain only http/https origins without paths');
@@ -182,6 +185,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
     aiApiUrl: raw.AI_API_URL,
     aiApiKey: raw.AI_API_KEY,
     aiModel: raw.AI_MODEL,
+    metricsToken: raw.METRICS_TOKEN,
     portalSecurityV2: raw.PORTAL_SECURITY_V2,
     portalStorageV2: raw.PORTAL_STORAGE_V2,
     portalAiEnabled: raw.PORTAL_AI_ENABLED,

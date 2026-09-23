@@ -1,5 +1,5 @@
 export function getMaxBridge() {
-  return typeof window !== 'undefined' ? window.WebApp || null : null;
+  return typeof window !== 'undefined' ? window.WebApp || window.MaxBridge || null : null;
 }
 
 export function getInitData(bridge = getMaxBridge()) {

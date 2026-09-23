@@ -4,6 +4,7 @@ import test from 'node:test';
 import { PortalModuleRegistry } from '../../src/portal/module-registry.js';
 import type { ModuleDefinition } from '../../src/portal/module-contracts.js';
 import { createModuleServiceToken } from '../../src/portal/communication.js';
+import type { PortalModule } from '../../src/portal/contracts.js';
 
 const moduleDefinition = (id: string, mode: 'exclusive' | 'broadcast' = 'exclusive'): ModuleDefinition => ({
   manifest: {
@@ -108,4 +109,20 @@ test('module policy requires capabilities for transport surfaces and authorizati
     setup(context) { context.registerCallbackAction({ namespace: 'callback', verb: 'resource', requiresResource: true }); },
   });
   assert.throws(() => callback.finalize(), /authorization policy/u);
+});
+
+test('staging and production registry requires an explicit module security review', () => {
+  const registry = new PortalModuleRegistry(undefined, { requireSecurityReview: true });
+  assert.throws(() => registry.registerDefinition(moduleDefinition('unreviewed')), /security review/u);
+  const legacyModule: PortalModule = { id: 'legacy', version: 1, canHandle: () => true, handle: async () => ({ text: 'legacy', actions: [] }) };
+  assert.throws(() => registry.register(legacyModule), /reviewed definition contract/u);
+  const reviewed = new PortalModuleRegistry(undefined, { requireSecurityReview: true });
+  reviewed.registerDefinition({
+    ...moduleDefinition('reviewed'),
+    manifest: {
+      ...moduleDefinition('reviewed').manifest,
+      securityReview: { owner: 'security@example.com', reviewedAt: '2026-09-23T00:00:00.000Z', threatModel: 'docs/security/threat-model.md', dataClasses: ['account'] },
+    },
+  });
+  assert.equal(reviewed.finalize().modules.length, 1);
 });

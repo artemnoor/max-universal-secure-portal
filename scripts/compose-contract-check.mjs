@@ -10,10 +10,10 @@ const requireFragment = (fragment, description) => {
 
 requireFragment('migrate:', 'missing migrate service');
 requireFragment('REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379', 'migrate service must receive REDIS_URL');
-requireFragment('command: ["node", "dist/entrypoints/db-migrate.js"]', 'migrate service must run the compiled migration entrypoint');
+requireFragment('command: ["migrate"]', 'migrate service must run the compiled migration role');
 const migrationGates = compose.match(/migrate:\n\s+condition: service_completed_successfully/g) ?? [];
 if (migrationGates.length !== 2) failures.push(`app and bot must wait for successful migrations (found ${migrationGates.length})`);
-requireFragment('command: ["node", "dist/bot.js"]', 'bot service must run the compiled MAX entrypoint');
+requireFragment('command: ["bot"]', 'bot service must run the compiled MAX role');
 requireFragment('expose:', 'app and bot must use internal container exposure in the base topology');
 if (!edgeCompose.includes('gateway:') || !edgeCompose.includes('nginx:1.27-alpine')) failures.push('edge Compose must define the replaceable Nginx gateway');
 if (!edgeCompose.includes('./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro')) failures.push('edge Compose must mount the gateway config read-only');

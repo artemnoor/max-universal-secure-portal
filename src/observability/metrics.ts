@@ -15,7 +15,10 @@ export type MetricName =
   | 'module_concurrency_denied_total'
   | 'module_timeout_total'
   | 'module_state_quota_rejected_total'
-  | 'module_callback_denied_total';
+  | 'module_callback_denied_total'
+  | 'readiness_failures_total'
+  | 'graceful_shutdown_total'
+  | 'uncaught_exception_total';
 
 export type MetricLabels = Readonly<{
   status?: string;
@@ -41,6 +44,7 @@ const prometheusKey = (key: string, suffix = ''): string => {
 };
 
 export class PortalMetrics {
+  private readonly startedAtMs = Date.now();
   private readonly counters = new Map<string, number>();
   private readonly observations = new Map<string, { count: number; sum: number }>();
 
@@ -74,6 +78,11 @@ export class PortalMetrics {
       `${formatLabels(prometheusKey(key, '_count'))} ${observation.count}`,
       `${formatLabels(prometheusKey(key, '_sum'))} ${observation.sum}`,
     ]);
-    return [...counterLines, ...observationLines].join('\n');
+    const processLines = [
+      `portal_process_start_time_seconds ${Math.floor(this.startedAtMs / 1000)}`,
+      `portal_process_uptime_seconds ${Math.max(0, (Date.now() - this.startedAtMs) / 1000)}`,
+      `portal_process_resident_memory_bytes ${process.memoryUsage().rss}`,
+    ];
+    return [...counterLines, ...observationLines, ...processLines].join('\n');
   }
 }

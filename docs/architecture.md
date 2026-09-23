@@ -9,7 +9,8 @@
 - `src/infrastructure` implements PostgreSQL, Redis, PII encryption, migration verification and development-only storage.
 - `src/entrypoints/composition.ts` is the only composition root; `src/hosts` own bot, web and migration lifecycle.
 - `src/modules` is empty by default and reserved for independent feature modules.
-- `miniapp` is intentionally an empty UI shell.
+- `miniapp` is a generic operational UI shell: it reads the public portal catalog, shows health/module status, and leaves product flows to feature modules.
+- `contracts` contains the machine-readable event envelope and stable HTTP/OpenAPI boundary; runtime TypeScript/Zod validators remain authoritative for untrusted input.
 
 The catalog is finalized before listeners start. It aggregates module event handlers, HTTP routes, callback definitions, commands, services, readiness checks and explicit migration inputs. The default catalog contains no product behavior.
 

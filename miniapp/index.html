@@ -4,15 +4,65 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0a1020" />
     <title>MAX Portal</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main id="app" class="shell" aria-live="polite">
-      <span class="eyebrow">MAX / PORTAL</span>
-      <h1>Универсальный каркас</h1>
-      <p>Добавьте собственные модули, маршруты и интерфейс в точках расширения проекта.</p>
-      <p id="status" class="status">Инициализация…</p>
+    <main class="app-shell" aria-labelledby="page-title">
+      <header class="topbar">
+        <a class="brand" href="#overview" data-view="overview" aria-label="MAX Portal, на главную">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span>MAX Portal</span>
+        </a>
+        <span id="connection" class="connection connection-pending">Проверяем связь…</span>
+      </header>
+
+      <section class="hero" aria-describedby="page-description">
+        <div class="eyebrow">UNIVERSAL PORTAL · CONTRACT V1</div>
+        <h1 id="page-title">Рабочее пространство<br /><span>для твоих модулей.</span></h1>
+        <p id="page-description">Единая оболочка Mini App показывает состояние портала, подключённые модули и безопасные точки расширения.</p>
+        <div class="hero-actions">
+          <button class="button button-primary" type="button" data-view="modules">Открыть модули <span aria-hidden="true">→</span></button>
+          <button class="button button-quiet" type="button" data-view="diagnostics">Диагностика</button>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Сводка портала">
+        <article class="stat-card"><span class="stat-label">Состояние</span><strong id="status">Инициализация…</strong><span class="stat-hint">health boundary</span></article>
+        <article class="stat-card"><span class="stat-label">Модули</span><strong id="module-count">—</strong><span class="stat-hint">из каталога контракта</span></article>
+        <article class="stat-card"><span class="stat-label">Авторизация</span><strong>MAX Init Data</strong><span class="stat-hint">без auth в URL</span></article>
+      </section>
+
+      <nav class="tabs" aria-label="Разделы портала" role="tablist">
+        <button class="tab is-active" type="button" role="tab" aria-selected="true" data-view="overview">Обзор</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" data-view="modules">Модули</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" data-view="diagnostics">Диагностика</button>
+      </nav>
+
+      <section id="overview-view" class="view" data-panel="overview" role="tabpanel">
+        <div class="section-heading"><div><span class="eyebrow">OVERVIEW</span><h2>Сейчас в портале</h2></div><span class="live-dot">● live</span></div>
+        <div class="overview-grid">
+          <article class="feature-card feature-card-accent"><span class="feature-icon" aria-hidden="true">✦</span><div><h3>Модульная основа</h3><p>Каждый сценарий подключается через typed contract, собственные routes и callbacks.</p></div></article>
+          <article class="feature-card"><span class="feature-icon" aria-hidden="true">⌁</span><div><h3>Безопасный transport</h3><p>MAX авторизация, лимиты, подписи и ownership остаются на серверной границе.</p></div></article>
+        </div>
+      </section>
+
+      <section id="modules-view" class="view" data-panel="modules" role="tabpanel" hidden>
+        <div class="section-heading"><div><span class="eyebrow">CATALOG</span><h2>Подключённые модули</h2></div><span id="contract-version" class="tag">contract —</span></div>
+        <div id="module-grid" class="module-grid" aria-live="polite"></div>
+      </section>
+
+      <section id="diagnostics-view" class="view" data-panel="diagnostics" role="tabpanel" hidden>
+        <div class="section-heading"><div><span class="eyebrow">OPERATIONS</span><h2>Диагностика</h2></div></div>
+        <div class="diagnostic-list">
+          <div class="diagnostic-row"><span class="diagnostic-icon">✓</span><div><strong>Signed Mini App auth</strong><small>Идентичность передаётся через X-Max-Init-Data.</small></div><span class="tag">server</span></div>
+          <div class="diagnostic-row"><span class="diagnostic-icon">✓</span><div><strong>Request boundary</strong><small>Origin, body size и response limits применяются до модулей.</small></div><span class="tag">protected</span></div>
+          <div class="diagnostic-row"><span class="diagnostic-icon">✓</span><div><strong>Module isolation</strong><small>Модуль получает только объявленные capabilities и scoped ports.</small></div><span class="tag">contract</span></div>
+        </div>
+      </section>
+
+      <footer class="footer"><span>MAX Portal</span><span id="footer-message">Готов к расширению</span></footer>
     </main>
     <script type="module" src="/app.js"></script>
   </body>

@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: MAX Universal Secure Portal
+  version: 1.0.0
+  description: Stable HTTP boundary shared by the web runtime, Mini App and operational tooling.
+servers:
+  - url: https://portal.example.com
+paths:
+  /health/live:
+    get:
+      operationId: liveHealth
+      responses:
+        '200':
+          description: Process is alive.
+  /health/ready:
+    get:
+      operationId: readyHealth
+      responses:
+        '200':
+          description: Dependencies and migrations are ready.
+        '503':
+          description: A readiness check failed.
+  /api/v1/health:
+    get:
+      operationId: apiHealth
+      responses:
+        '200':
+          description: Public API health response.
+  /api/v1/portal/info:
+    get:
+      operationId: portalInfo
+      responses:
+        '200':
+          description: Public module catalog metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalInfo'
+  /internal/metrics:
+    get:
+      operationId: metrics
+      security:
+        - metricsBearer: []
+      responses:
+        '200':
+          description: Prometheus text exposition.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Endpoint is disabled or credentials are invalid.
+components:
+  securitySchemes:
+    metricsBearer:
+      type: http
+      scheme: bearer
+  schemas:
+    PortalModuleSummary:
+      type: object
+      additionalProperties: false
+      required: [id, version, publicName]
+      properties:
+        id: { type: string, pattern: '^[a-z][a-z0-9-]{0,31}$' }
+        version: { type: integer, minimum: 1 }
+        publicName: { type: string, minLength: 1, maxLength: 128 }
+    PortalInfo:
+      type: object
+      additionalProperties: false
+      required: [name, contractVersion, modules]
+      properties:
+        name: { const: MAX Portal }
+        contractVersion: { const: 1 }
+        modules:
+          type: array
+          maxItems: 256
+          items: { $ref: '#/components/schemas/PortalModuleSummary' }

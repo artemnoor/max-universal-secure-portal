@@ -43,6 +43,10 @@ export type ModuleCatalog = Readonly<{
   readinessChecks: readonly ModuleReadyCheck[];
 }>;
 
+export type ModuleRegistryOptions = Readonly<{
+  requireSecurityReview?: boolean;
+}>;
+
 type MutableRegistration = {
   definition: ModuleDefinition;
   eventHandlers: ModuleEventRegistration[];
@@ -116,6 +120,12 @@ const validateManifest = (manifest: ModuleManifest): void => {
   }
   if (manifest.timeoutMs !== undefined && (!Number.isSafeInteger(manifest.timeoutMs) || manifest.timeoutMs < 1 || manifest.timeoutMs > 30_000)) throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Тайм-аут модуля имеет недопустимое значение.');
   if (manifest.maxConcurrency !== undefined && (!Number.isSafeInteger(manifest.maxConcurrency) || manifest.maxConcurrency < 1 || manifest.maxConcurrency > 128)) throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Лимит параллелизма модуля имеет недопустимое значение.');
+  if (manifest.securityReview !== undefined) {
+    const review = manifest.securityReview;
+    if (!review || typeof review !== 'object' || typeof review.owner !== 'string' || !/^[A-Za-zА-Яа-я0-9 ._@-]{2,128}$/u.test(review.owner) || typeof review.threatModel !== 'string' || review.threatModel.trim().length === 0 || review.threatModel.length > 512 || typeof review.reviewedAt !== 'string' || !Number.isFinite(Date.parse(review.reviewedAt)) || !Array.isArray(review.dataClasses) || review.dataClasses.length === 0 || review.dataClasses.some((item) => !['public', 'account', 'personal', 'sensitive'].includes(item))) {
+      throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Security review модуля имеет недопустимый формат.');
+    }
+  }
 };
 
 const validateCallback = (definition: ModuleCallbackActionDefinition): void => {
@@ -148,13 +158,16 @@ export class PortalModuleRegistry {
   private readonly definitions = new Map<string, MutableRegistration>();
   private finalized?: ModuleCatalog;
   private readonly logger: Logger;
+  private readonly requireSecurityReview: boolean;
 
-  constructor(logger: Logger = createLogger({ bindings: { component: 'module-registry' } })) {
+  constructor(logger: Logger = createLogger({ bindings: { component: 'module-registry' } }), options: ModuleRegistryOptions = {}) {
     this.logger = logger;
+    this.requireSecurityReview = options.requireSecurityReview ?? false;
   }
 
   register(module: PortalModule, actions: readonly ModuleCallbackActionDefinition[] = []): void {
     if (!MODULE_ID_PATTERN.test(module.id) || !Number.isSafeInteger(module.version) || module.version < 1) throw new AppError(ERROR_CODES.VALIDATION_FAILED, 400, 'Модуль портала имеет недопустимый контракт.');
+    if (this.requireSecurityReview) throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Production modules must use a reviewed definition contract.');
     if (this.modules.has(module.id) || this.definitions.has(module.id) || this.finalized) throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Модуль портала зарегистрирован повторно или каталог уже закрыт.');
     this.modules.set(module.id, { module, actions: Object.freeze([...actions]) });
   }
@@ -162,6 +175,9 @@ export class PortalModuleRegistry {
   registerDefinition(definition: ModuleDefinition): void {
     if (this.finalized) throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Каталог модулей уже закрыт.');
     validateManifest(definition.manifest);
+    if (this.requireSecurityReview && !definition.manifest.securityReview) {
+      throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Production module requires an explicit security review.');
+    }
     const { id } = definition.manifest;
     if (this.modules.has(id) || this.definitions.has(id)) throw new AppError(ERROR_CODES.CONFIG_INVALID, 500, 'Модуль портала зарегистрирован повторно.');
     const registration: MutableRegistration = {

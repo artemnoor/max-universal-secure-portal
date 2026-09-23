@@ -1,4 +1,5 @@
 import { createReadStream } from 'node:fs';
+import { timingSafeEqual } from 'node:crypto';
 import { realpath, stat } from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname, normalize, resolve, sep } from 'node:path';
@@ -9,6 +10,7 @@ import { AppError, errorToLogFields, errorToPublicPayload, ERROR_CODES } from '.
 import { createLogger, type Logger } from '../core/logger.js';
 import type { PortalPrincipal } from '../core/principal.js';
 import type { PortalHttpContent, PortalHttpRoute, PortalHttpRequest } from '../portal/ports/http-content.js';
+import type { PortalInfo } from '../portal/portal-info.js';
 import type { PortalUserStore } from '../portal/ports/user-store.js';
 import { applySecurityHeaders, assertJsonContentType, rejectQueryAuth, requestId } from './middleware/security.js';
 import { extractMaxSession, toPortalPrincipal } from './middleware/max-principal.js';
@@ -17,8 +19,9 @@ import type { PortalMetrics } from '../observability/metrics.js';
 import type { HttpRateLimiter } from './rate-limit.js';
 
 export type HttpAppDependencies = Readonly<{
-  config: Pick<AppConfig, 'nodeEnv' | 'isProduction' | 'botToken' | 'initDataTtlSeconds' | 'allowUnverifiedMiniApp' | 'devAllowUnverifiedMiniApp' | 'adminUserIds' | 'publicAppOrigins' | 'webhookPath' | 'webhookSecret'>;
+  config: Pick<AppConfig, 'nodeEnv' | 'isProduction' | 'botToken' | 'initDataTtlSeconds' | 'allowUnverifiedMiniApp' | 'devAllowUnverifiedMiniApp' | 'adminUserIds' | 'publicAppOrigins' | 'webhookPath' | 'webhookSecret'> & Partial<Pick<AppConfig, 'metricsToken'>>;
   content?: PortalHttpContent;
+  portalInfo?: PortalInfo;
   store: PortalUserStore;
   logger?: Logger;
   miniAppRoot?: string;
@@ -50,6 +53,12 @@ const routeMatches = (route: PortalHttpRoute, method: string, pathname: string):
   return route.match(method, pathname);
 };
 const safeRateValue = (value: string): string => value.replace(/[^A-Za-z0-9._:-]/g, '_').slice(0, 256) || 'unknown';
+const safeTokenEqual = (expected: string, actual: string | undefined): boolean => {
+  if (!actual) return false;
+  const left = Buffer.from(expected, 'utf8');
+  const right = Buffer.from(actual, 'utf8');
+  return left.length === right.length && timingSafeEqual(left, right);
+};
 
 export const serveStatic = async (response: ServerResponse, pathname: string, root: string, dependencies: Pick<HttpAppDependencies, 'config'>, request: IncomingMessage): Promise<void> => {
   const requested = pathname === '/' ? '/index.html' : pathname;
@@ -77,7 +86,30 @@ export const buildHttpApp = (dependencies: HttpAppDependencies): HttpApp => {
       if (url.pathname === dependencies.config.webhookPath && dependencies.webhookHandler) { dependencies.webhookHandler(request, response); return; }
       if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/v1/')) { write(404, { error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Маршрут не найден.', requestId: id } }); return; }
       if (url.pathname === '/api/v1/health' && request.method === 'GET') { write(200, { ok: true, status: 'ready', requestId: id }); return; }
+      if (url.pathname === '/api/v1/portal/info' && request.method === 'GET') {
+        const info = dependencies.portalInfo ?? { name: 'MAX Portal', contractVersion: 1, modules: [] };
+        logger.debug({ requestId: id, moduleCount: info.modules.length }, '[FIX] portal info served');
+        write(200, info);
+        return;
+      }
       if (url.pathname === '/health/live' && request.method === 'GET') { write(200, { ok: true, status: 'live', requestId: id }); return; }
+      if (url.pathname === '/internal/metrics' && request.method === 'GET') {
+        const authorization = header(request, 'authorization');
+        const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : undefined;
+        if (!dependencies.metrics || !dependencies.config.metricsToken || !safeTokenEqual(dependencies.config.metricsToken, token)) {
+          dependencies.metrics?.increment('auth_failures_total', { errorCode: 'METRICS_AUTH' });
+          write(404, { error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Маршрут не найден.', requestId: id } });
+          return;
+        }
+        applySecurityHeaders(response, dependencies.config, origin);
+        response.setHeader('x-request-id', id);
+        response.setHeader('cache-control', 'no-store');
+        response.setHeader('content-type', 'text/plain; version=0.0.4; charset=utf-8');
+        response.writeHead(200);
+        response.end(`${dependencies.metrics.prometheus()}\n`);
+        dependencies.metrics.increment('http_requests_total', { status: '200' });
+        return;
+      }
       if (url.pathname === '/health/ready' && request.method === 'GET') {
         const readiness = await checkReadiness(dependencies.readiness ? [{ name: 'runtime', check: dependencies.readiness }] : [], logger, dependencies.metrics); write(readiness.ok ? 200 : 503, { ok: readiness.ok, status: readiness.ok ? 'ready' : 'unavailable', requestId: id }); return;
       }

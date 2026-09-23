@@ -6,6 +6,7 @@ import type { PortalHttpContent } from '../portal/ports/http-content.js';
 import type { PortalRuntime } from '../infrastructure/runtime/portal-runtime.js';
 import type { PortalMetrics } from '../observability/metrics.js';
 import type { ModuleCallbackActionDefinition, ModuleCommand } from '../portal/module-contracts.js';
+import type { PortalInfo } from '../portal/portal-info.js';
 
 export type PortalComposition = Readonly<{
   config: AppConfig;
@@ -13,6 +14,7 @@ export type PortalComposition = Readonly<{
   runtime: PortalRuntime;
   application?: PortalApplication;
   catalog: ModuleCatalog;
+  portalInfo: PortalInfo;
   httpContent: PortalHttpContent;
   callbackDefinitions: readonly ModuleCallbackActionDefinition[];
   commands: readonly ModuleCommand[];

@@ -17,6 +17,7 @@ test('composition root creates an empty universal catalog without product surfac
     assert.equal(composition.catalog.callbackDefinitions.length, 0);
     assert.equal(composition.catalog.commands.length, 0);
     assert.equal(composition.application, undefined);
+    assert.deepEqual(composition.portalInfo, { name: 'MAX Portal', contractVersion: 1, modules: [] });
   } finally {
     await composition.close();
     await rm(directory, { recursive: true, force: true });

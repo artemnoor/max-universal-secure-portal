@@ -5,6 +5,7 @@ import { PortalApplication } from '../portal/application.js';
 import type { ModuleDefinition } from '../portal/module-contracts.js';
 import { PortalModuleRegistry } from '../portal/module-registry.js';
 import { createModuleHttpContent, moduleCallbackDefinitions, moduleCommands } from '../portal/module-surfaces.js';
+import { createPortalInfo } from '../portal/portal-info.js';
 import { createPortalRuntime } from '../infrastructure/runtime/portal-runtime.js';
 import { PortalMetrics } from '../observability/metrics.js';
 import type { PortalComposition } from '../runtime/host-contracts.js';
@@ -19,9 +20,10 @@ export type CompositionOptions = Readonly<{
 /** The only place where adapters, kernel, modules and host-facing surfaces are assembled. */
 export const createPortalComposition = (config: AppConfig, options: CompositionOptions = {}): PortalComposition => {
   const logger = options.logger ?? createLogger({ level: config.logLevel, bindings: { component: 'portal-composition' } });
-  const registry = new PortalModuleRegistry(logger.child({ component: 'module-registry' }));
+  const registry = new PortalModuleRegistry(logger.child({ component: 'module-registry' }), { requireSecurityReview: config.nodeEnv === 'staging' || config.nodeEnv === 'production' });
   for (const module of options.modules ?? []) registry.registerDefinition(module);
   const catalog = registry.finalize();
+  const portalInfo = createPortalInfo(catalog);
   const runtime = createPortalRuntime(config, { moduleMigrations: catalog.migrations });
   const metrics = new PortalMetrics();
   const application = runtime.storage
@@ -37,6 +39,7 @@ export const createPortalComposition = (config: AppConfig, options: CompositionO
     runtime,
     application,
     catalog,
+    portalInfo,
     httpContent: createModuleHttpContent(catalog),
     callbackDefinitions: moduleCallbackDefinitions(catalog),
     commands: moduleCommands(catalog),

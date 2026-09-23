@@ -11,6 +11,12 @@ export const SERVICE_ID_PATTERN = /^[a-z][a-z0-9.-]{0,63}$/u;
 export type ModuleEventMode = 'exclusive' | 'broadcast';
 export type ModuleEventSubscription = Readonly<{ kind: PortalEventKind; mode: ModuleEventMode }>;
 export type ModuleDependency = Readonly<{ id: string; minVersion: number }>;
+export type ModuleSecurityReview = Readonly<{
+  owner: string;
+  reviewedAt: string;
+  threatModel: string;
+  dataClasses: readonly ('public' | 'account' | 'personal' | 'sensitive')[];
+}>;
 export const MODULE_CAPABILITIES = [
   'user.read',
   'user.write',
@@ -44,6 +50,7 @@ export type ModuleManifest = Readonly<{
   publishesEvents?: readonly string[];
   timeoutMs?: number;
   maxConcurrency?: number;
+  securityReview?: ModuleSecurityReview;
 }>;
 
 export type ModuleResult = Readonly<{

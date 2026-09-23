@@ -18,7 +18,12 @@ const run = async () => {
     await waitForHttp(`${base}/health/live`); browser = await chromium.launch({ headless: true }); const page = await browser.newPage();
     await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
     if (await page.title() !== 'MAX Portal') throw new Error('Mini App title did not render');
-    if (!(await page.locator('#status').textContent()).includes('Каркас')) throw new Error('Generic Mini App shell did not render');
+    if (!(await page.locator('#status').textContent()).includes('готов')) throw new Error('Portal status did not render');
+    if (await page.locator('#module-grid').count() !== 1) throw new Error('Portal module directory did not render');
+    const portalInfo = await page.request.get(`${base}/api/v1/portal/info`);
+    if (portalInfo.status() !== 200) throw new Error(`Portal info endpoint returned ${portalInfo.status()}`);
+    const portalPayload = await portalInfo.json();
+    if (!Array.isArray(portalPayload.modules)) throw new Error('Portal info did not return a module list');
     const queryAuth = await page.request.get(`${base}/api/v1/health?initData=browser-secret`); if (queryAuth.status() < 400) throw new Error('Query auth was accepted');
   } finally { await browser?.close(); await stop(child); await rm(dataDir, { recursive: true, force: true }); if (child.exitCode !== 0 && child.exitCode !== null) throw new Error(`Browser-check server exited: ${output.slice(-20).join('').slice(-4000)}`); }
 };
