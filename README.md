@@ -26,10 +26,10 @@ npm run app
 
 ## Подключение своего модуля
 
-1. Создайте модуль в `src/modules/<module-name>`.
-2. Реализуйте `PortalModule` и зарегистрируйте его в `createPortalApplication`.
-3. Для Mini App реализуйте `PortalHttpContent.routes()` с явной access policy.
-4. Добавляйте callback actions только через allowlist и проверку владельца ресурса.
+1. Создайте модуль в `src/modules/<module-name>` по [контракту модулей](docs/architecture/modules.md).
+2. Реализуйте `ModuleDefinition` и передайте его в `createPortalComposition` в своём deployment composition.
+3. Для HTTP регистрируйте route с явной `public`/`principal`/`admin` policy и capability.
+4. Добавляйте callback actions только через allowlist; resource-bearing actions обязаны иметь authorization policy.
 5. Не переносите секреты, PII или продуктовые fixture-данные в код и Git.
 
 ## Production
@@ -47,11 +47,14 @@ npm run check
 ## Основные файлы
 
 - `src/entrypoints/bot.ts` — composition root для MAX.
+- `src/entrypoints/composition.ts` — единая сборка runtime, kernel и module catalog.
+- `src/hosts/` — отдельные lifecycle hosts для bot, web и migration.
 - `src/app-server.ts` — HTTP lifecycle.
 - `src/portal/contracts.ts` — transport-neutral contracts.
 - `src/portal/application.ts` — module kernel и state boundary.
 - `src/http/app.ts` — security boundary для API и static files.
 - `src/infrastructure/postgres/repositories.ts` — durable storage adapters.
 - `docs/architecture.md` — зависимости и границы.
+- `docs/architecture/modules.md` — контракты и правила расширения.
 - `docs/security/threat-model.md` — угрозы и остаточные риски.
 - `docs/operations/runbook.md` — эксплуатационные проверки.

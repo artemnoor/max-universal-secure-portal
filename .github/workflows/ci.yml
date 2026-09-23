@@ -19,6 +19,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run check:module-boundaries
+      - run: npm run check:architecture
       - run: npm test
       - run: npm run build
       - run: npm run check:compose
@@ -31,6 +33,12 @@ jobs:
           trap 'rm -f .env' EXIT
           cp .env.example .env
           docker compose config --quiet
+      - name: Validate optional Nginx edge Compose
+        shell: bash
+        env:
+          POSTGRES_PASSWORD: ci-compose-password
+          REDIS_PASSWORD: ci-compose-password
+        run: docker compose -f docker-compose.yml -f docker-compose.edge.yml config --quiet
       - name: Build production image
         run: docker build --tag max-portal:ci .
       - run: npm run coverage:check
@@ -42,6 +50,7 @@ jobs:
         run: npm run test:integration
       - run: npm run verify:config
       - run: npm run docs:check
+      - run: npm run check:architecture
       - run: npm audit --audit-level=high
       - name: Reject committed local secrets and runtime data
         shell: bash

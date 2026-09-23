@@ -1,13 +1,16 @@
 # Архитектура
 
-Каркас разделён на transport, application, HTTP и infrastructure boundaries.
+Каркас разделён на независимые transport, application, HTTP, host и infrastructure boundaries.
 
-- \`src/core\` не знает о MAX SDK и предметной области.
-- \`src/platform/max\` нормализует внешние события и строит безопасный transport response.
-- \`src/portal\` содержит contracts, module registry, application kernel и storage ports.
-- \`src/http\` owns origin checks, signed MAX auth, body/response limits, access policy and static serving.
-- \`src/infrastructure\` implements PostgreSQL, Redis and development-only storage.
-- \`miniapp\` is intentionally an empty UI shell.
+- `src/core` содержит конфигурацию, ошибки, principal, URL policy и redacting logger; он не знает о MAX SDK и предметной области.
+- `src/portal` содержит transport-neutral contracts, versioned module registry, dependency graph, kernel, scoped ports and module policies.
+- `src/platform/max` нормализует внешние MAX updates, проверяет Webhook boundary и строит безопасный transport response.
+- `src/http` owns origin checks, signed MAX auth, body/response limits, access policy and static serving.
+- `src/infrastructure` implements PostgreSQL, Redis, PII encryption, migration verification and development-only storage.
+- `src/entrypoints/composition.ts` is the only composition root; `src/hosts` own bot, web and migration lifecycle.
+- `src/modules` is empty by default and reserved for independent feature modules.
+- `miniapp` is intentionally an empty UI shell.
 
-Предметный модуль регистрируется в \`createPortalApplication\`, а HTTP-модуль реализует \`PortalHttpContent.routes()\` с явным \`public\`/ \`principal\`/ \`admin\` access policy. Core не содержит готовых кнопок, маршрутов или пользовательского сценария.
+The catalog is finalized before listeners start. It aggregates module event handlers, HTTP routes, callback definitions, commands, services, readiness checks and explicit migration inputs. The default catalog contains no product behavior.
 
+See [module development](architecture/modules.md) for contracts and [security threat model](security/threat-model.md) for the trust boundary.

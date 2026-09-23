@@ -14,6 +14,7 @@ MAX updates, Mini App requests, callback payloads, external module routes, Postg
 - Redis используется для TTL, locks и rate limits; PostgreSQL update inbox обеспечивает idempotency;
 - static serving блокирует traversal, source maps и небезопасный origin;
 - production config требует Webhook, durable storage, TLS и release gates.
+- module registration is a separate trust boundary: dependency graph, capability allowlist, route policy, callback authorization, state quotas, timeouts, concurrency and output handling are enforced by the kernel;
+- module storage is principal/module scoped; PII is field/context-bound and the optional Nginx edge never replaces Node authorization.
 
-Остаточный риск: предметный модуль может ошибочно ослабить свою бизнес-авторизацию. Поэтому каждый модуль должен проходить отдельный review и security tests.
-
+Остаточный риск: предметный модуль может ошибочно ослабить свою бизнес-авторизацию или обработать чувствительные данные не по назначению. Поэтому каждый модуль должен проходить отдельный review и security tests.

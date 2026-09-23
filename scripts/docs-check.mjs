@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises';
 
 const required = [
   'docs/architecture.md',
+  'docs/architecture/modules.md',
+  'src/modules/README.md',
   'docs/security/threat-model.md',
   'docs/security/ai-boundary.md',
   'docs/security/data-retention.md',
@@ -16,6 +18,8 @@ const requiredFragments = [
   ['docs/security/threat-model.md', 'initData'],
   ['docker-compose.yml', 'dist/bot.js'],
   ['README.md', 'MAX bot и HTTP/Mini App runtime'],
+  ['docs/architecture/modules.md', 'ModuleContext'],
+  ['src/modules/README.md', 'ModuleDefinition'],
 ];
 
 const failures = [];

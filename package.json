@@ -12,6 +12,8 @@
     "test:browser": "node scripts/miniapp-check.mjs && node scripts/browser-check.mjs",
     "test:integration": "node scripts/integration-check.mjs",
     "check:compose": "node scripts/compose-contract-check.mjs",
+    "check:module-boundaries": "node scripts/module-boundary-check.mjs",
+    "check:architecture": "node scripts/architecture-boundary-check.mjs",
     "coverage:check": "node scripts/coverage-check.mjs",
     "audit": "npm audit --audit-level=high",
     "docs:check": "node scripts/docs-check.mjs",
@@ -22,7 +24,7 @@
     "app": "tsx src/app-server.ts",
     "all": "tsx src/dev-all.ts",
     "start": "node dist/bot.js",
-    "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run check:compose && npm run docs:check && npm run test:browser"
+    "check": "npm run typecheck && npm run lint && npm run check:module-boundaries && npm run check:architecture && npm test && npm run build && npm run check:compose && npm run docs:check && npm run test:browser"
   },
   "dependencies": {
     "@maxhub/max-bot-api": "^0.3.1",
