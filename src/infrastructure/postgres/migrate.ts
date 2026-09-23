@@ -19,7 +19,7 @@ type MigrationRecord = Readonly<{
   checksum: string | null;
 }>;
 
-const readMigrationFiles = async (migrationDirectory: string): Promise<readonly MigrationFile[]> => {
+const readMigrationFiles = async (migrationDirectory: string, moduleMigrations: readonly Readonly<{ ownerId: string; version: string; sql: string }>[] = []): Promise<readonly MigrationFile[]> => {
   const fileNames = (await readdir(migrationDirectory))
     .filter((fileName) => MIGRATION_FILE_PATTERN.test(fileName))
     .sort((left, right) => {
@@ -29,15 +29,20 @@ const readMigrationFiles = async (migrationDirectory: string): Promise<readonly 
       if (leftVersion > rightVersion) return 1;
       return left.localeCompare(right);
     });
-
-  return Promise.all(fileNames.map(async (fileName) => {
+  const coreMigrations = await Promise.all(fileNames.map(async (fileName) => {
     const sql = await readFile(join(migrationDirectory, fileName), 'utf8');
-    return {
-      version: fileName.replace(/\.sql$/u, ''),
-      sql,
-      checksum: createHash('sha256').update(sql, 'utf8').digest('hex'),
-    };
+    return { version: fileName.replace(/\.sql$/u, ''), sql, checksum: createHash('sha256').update(sql, 'utf8').digest('hex') };
   }));
+  const ownedMigrations = moduleMigrations.map((migration) => {
+    if (!/^[a-z][a-z0-9-]{0,31}$/u.test(migration.ownerId) || !MIGRATION_FILE_PATTERN.test(`${migration.version}.sql`) || migration.sql.trim().length === 0) throw new Error('invalid explicit module migration');
+    return { version: `${migration.ownerId}:${migration.version}`, sql: migration.sql, checksum: createHash('sha256').update(migration.sql, 'utf8').digest('hex') };
+  });
+  const versions = new Set<string>();
+  for (const migration of [...coreMigrations, ...ownedMigrations]) {
+    if (versions.has(migration.version)) throw new Error(`duplicate migration version ${migration.version}`);
+    versions.add(migration.version);
+  }
+  return [...coreMigrations, ...ownedMigrations];
 };
 
 const readMigrationRecords = async (executor: SqlExecutor): Promise<readonly MigrationRecord[]> => {
@@ -91,13 +96,15 @@ const assertMigrationDriftFree = async (
 export const verifyMigrations = async (
   executor: SqlExecutor,
   migrationDirectory = join(process.cwd(), 'db', 'migrations'),
+  moduleMigrations: readonly Readonly<{ ownerId: string; version: string; sql: string }>[] = [],
 ): Promise<void> => {
-  await assertMigrationRecords(executor, await readMigrationFiles(migrationDirectory));
+  await assertMigrationRecords(executor, await readMigrationFiles(migrationDirectory, moduleMigrations));
 };
 
 export const applyMigrations = async (
   config: Pick<AppConfig, 'databaseUrl' | 'isProduction' | 'logLevel'>,
   migrationDirectory = join(process.cwd(), 'db', 'migrations'),
+  moduleMigrations: readonly Readonly<{ ownerId: string; version: string; sql: string }>[] = [],
 ): Promise<void> => {
   const client = createPostgresClient(config);
   try {
@@ -115,7 +122,7 @@ export const applyMigrations = async (
         `);
         await session.query('ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT');
 
-        const migrationFiles = await readMigrationFiles(migrationDirectory);
+        const migrationFiles = await readMigrationFiles(migrationDirectory, moduleMigrations);
         // Validate every existing record before any migration SQL can mutate the schema.
         await assertMigrationDriftFree(session, migrationFiles);
 

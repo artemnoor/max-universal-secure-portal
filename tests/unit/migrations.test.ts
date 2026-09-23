@@ -45,3 +45,16 @@ test('migration readiness rejects database versions absent from the image', asyn
     /unknown migration/u,
   );
 });
+
+test('migration readiness accepts only explicit owned module migrations', async () => {
+  const sql = 'CREATE TABLE module_owned_fixture (id INTEGER PRIMARY KEY);';
+  const checksum = createHash('sha256').update(sql, 'utf8').digest('hex');
+  await verifyMigrations(executorFor([
+    { version: '0001_initial', checksum: await migrationChecksum() },
+    { version: 'profile:0002_add_fixture', checksum },
+  ]), undefined, [{ ownerId: 'profile', version: '0002_add_fixture', sql }]);
+  await assert.rejects(
+    verifyMigrations(executorFor([{ version: '0001_initial', checksum: await migrationChecksum() }]), undefined, [{ ownerId: 'Bad_Module', version: '0002_add_fixture', sql }]),
+    /invalid explicit module migration/u,
+  );
+});
