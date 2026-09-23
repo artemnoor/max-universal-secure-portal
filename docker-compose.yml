@@ -55,8 +55,8 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    ports:
-      - "${APP_PORT:-8787}:8787"
+    expose:
+      - "8787"
     read_only: true
     tmpfs:
       - /tmp
@@ -81,8 +81,8 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    ports:
-      - "${WEBHOOK_PORT:-3000}:3000"
+    expose:
+      - "3000"
     read_only: true
     tmpfs:
       - /tmp
