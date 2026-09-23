@@ -38,7 +38,10 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-compose-password
           REDIS_PASSWORD: ci-compose-password
-        run: docker compose -f docker-compose.yml -f docker-compose.edge.yml config --quiet
+        run: |
+          trap 'rm -f .env' EXIT
+          cp .env.example .env
+          docker compose -f docker-compose.yml -f docker-compose.edge.yml config --quiet
       - name: Build production image
         run: docker build --tag max-portal:ci .
       - run: npm run coverage:check
