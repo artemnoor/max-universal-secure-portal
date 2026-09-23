@@ -14,6 +14,8 @@ export type PortalHttpRequest = Readonly<{
 }>;
 export type PortalHttpResult = Readonly<{ status?: number; body: unknown; headers?: Readonly<Record<string, string>> }>;
 export type PortalHttpRoute = Readonly<{
+  id?: string;
+  moduleId?: string;
   method: PortalHttpMethod;
   match: PortalHttpRouteMatch;
   access: PortalHttpAccess;

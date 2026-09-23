@@ -94,7 +94,8 @@ export const buildHttpApp = (dependencies: HttpAppDependencies): HttpApp => {
       } else await dependencies.rateLimiter?.('ip', safeRateValue(request.socket.remoteAddress ?? 'unknown'));
       const body = request.method === 'GET' || request.method === 'HEAD' ? undefined : await readJson(request);
       const result = await route.handle({ request, url, body, requestId: id, ...(principal ? { principal } : {}) } satisfies PortalHttpRequest);
-      write(result.status ?? 200, result.body, result.headers);
+      // Module routes return data only. Node owns status, security headers, cookies, redirects and CORS.
+      write(200, result.body);
     } catch (error) {
       const safeError = error instanceof z.ZodError ? new AppError(ERROR_CODES.VALIDATION_FAILED, 400, 'Проверьте данные запроса.', { details: { issueCount: error.issues.length } }) : error;
       const publicPayload = safeError instanceof AppError ? safeError.toPublicPayload(id) : errorToPublicPayload(safeError, id); const status = safeError instanceof AppError ? safeError.status : 500;

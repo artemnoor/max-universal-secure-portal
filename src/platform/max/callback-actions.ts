@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
 import { AppError, ERROR_CODES } from '../../core/errors.js';
 import type { PortalPrincipal } from '../../core/principal.js';
+import type { ModuleCallbackActionDefinition } from '../../portal/module-contracts.js';
 
 export const MAX_CALLBACK_PAYLOAD_BYTES = 1024;
 export type CallbackAction = Readonly<{ namespace: string; verb: string; resource?: string; raw: string }>;
-export type CallbackActionDefinition = Readonly<{ namespace: string; verb: string; requiresResource?: boolean; authorize?: (action: CallbackAction, principal: PortalPrincipal) => Promise<boolean> | boolean }>;
+export type CallbackActionDefinition = ModuleCallbackActionDefinition & Readonly<{ authorize?: (action: CallbackAction, principal: PortalPrincipal) => Promise<boolean> | boolean }>;
 const ACTION_PART = /^[a-z][a-z0-9_-]{0,31}$/u;
 const RESOURCE_PART = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 const invalidAction = (message: string): AppError => new AppError(ERROR_CODES.VALIDATION_FAILED, 400, message);

@@ -10,7 +10,12 @@ export type MetricName =
   | 'max_update_failed_total'
   | 'max_api_requests_total'
   | 'max_api_429_total'
-  | 'max_api_latency_ms';
+  | 'max_api_latency_ms'
+  | 'module_capability_denied_total'
+  | 'module_concurrency_denied_total'
+  | 'module_timeout_total'
+  | 'module_state_quota_rejected_total'
+  | 'module_callback_denied_total';
 
 export type MetricLabels = Readonly<{
   status?: string;
