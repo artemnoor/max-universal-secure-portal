@@ -46,7 +46,7 @@ jobs:
       - name: Reject committed local secrets and runtime data
         shell: bash
         run: |
-          ! git ls-files | grep -E '(^|/)(\.env|data/|.*\.pem$|.*\.key$)' || {
+          ! git ls-files | grep -E '(^|/)\.env$|(^|/)data/|.*\.pem$|.*\.key$' || {
             echo 'Tracked secret/runtime artifact detected'; exit 1;
           }
           ! git grep -nE 'BOT_TOKEN[=][^$<>{}[:space:]]+|AI_API_KEY[=][^$<>{}[:space:]]+' -- ':!*.lock' ':!.env.example' || {
