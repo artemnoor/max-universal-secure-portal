@@ -11,4 +11,5 @@ coverage/
 *.tsbuildinfo
 .npm-seed/
 .agents/
+.ai-factory/
 graphify-out/
